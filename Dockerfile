@@ -2,19 +2,23 @@
 FROM gradle:8-jdk21 AS build
 COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
+# Skip tests to speed up the build for now
 RUN gradle build -x test --no-daemon
 
 # Stage 2: Run the JAR
 FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+
+# Copy only the executable JAR
+COPY --from=build /home/gradle/src/build/libs/*SNAPSHOT.jar /app/app.jar
+
+# Expose all possible ports (Web, Dev gRPC, Prod gRPC)
 EXPOSE 8080
 EXPOSE 9091
 EXPOSE 9092
 
-WORKDIR /app
-
-# Safer way: Copy all and we will specify the one to run,
-# or use a standard build name in gradle.
-COPY --from=build /home/gradle/src/build/libs/*.jar ./
-
-# This entrypoint prints the info, then finds the correct JAR (excluding plain) to run
-ENTRYPOINT ["sh", "-c", "echo 'Starting App... Profile: ${SPRING_PROFILES_ACTIVE}, gRPC Port: ${MY_GRPC_PORT}' && java -jar $(ls *[!plain].jar | head -n 1) --spring.profiles.active=${SPRING_PROFILES_ACTIVE} --grpc.server.port=${MY_GRPC_PORT}"]
+# Using Shell Form (no brackets) so environment variables expand correctly
+ENTRYPOINT echo "Starting App... Profile: $SPRING_PROFILES_ACTIVE, gRPC Port: $MY_GRPC_PORT" && \
+           java -jar /app/app.jar \
+           --spring.profiles.active=$SPRING_PROFILES_ACTIVE \
+           --grpc.server.port=$MY_GRPC_PORT
