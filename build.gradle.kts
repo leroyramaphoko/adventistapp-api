@@ -22,10 +22,10 @@ repositories {
     mavenCentral()
 }
 
-// STABLE VERSIONS - DO NOT CHANGE
+// PINNED VERSIONS
 val protobufVersion = "3.25.5"
-val grpcVersion = "1.69.1"
-val grpcKotlinVersion = "1.4.1"
+val grpcJavaVersion = "1.63.0"   // Matches the Spring Boot Starter
+val grpcKotlinVersion = "1.5.0" // Latest stable Kotlin compiler/stub
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -34,14 +34,15 @@ dependencies {
     // gRPC Starter
     implementation("net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE")
 
-    // Force exact Protobuf 3.x to match the Starter's expectations
+    // Unified Protobuf & gRPC Libraries
     implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
-    implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    implementation("io.grpc:grpc-protobuf:$grpcJavaVersion")
+    implementation("io.grpc:grpc-stub:$grpcJavaVersion")
+    implementation("io.grpc:grpc-netty-shaded:$grpcJavaVersion")
 
-    implementation("io.grpc:grpc-protobuf:$grpcVersion")
+    // Kotlin gRPC Runtime Support
     implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
-    implementation("io.grpc:grpc-stub:$grpcVersion")
 
     implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
 
@@ -49,14 +50,25 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 }
 
+// FIX: Force library versions but ignore the code-generation plugins
+configurations.all {
+    resolutionStrategy.eachDependency {
+        // Only force version for JAR libraries, not the "protoc-gen" tools
+        if (requested.group == "io.grpc"
+            && !requested.name.startsWith("protoc-gen")
+            && requested.name != "grpc-kotlin-stub") {
+            useVersion(grpcJavaVersion)
+        }
+    }
+}
+
 protobuf {
     protoc {
-        // This MUST match the 3.25.5 runtime version above
         artifact = "com.google.protobuf:protoc:$protobufVersion"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcJavaVersion"
         }
         id("grpckt") {
             artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar"
@@ -87,7 +99,6 @@ sourceSets {
         java {
             srcDirs("build/generated/source/proto/main/java", "build/generated/source/proto/main/grpc")
         }
-        // Specific entry for Kotlin generated gRPC stubs
         kotlin {
             srcDirs("src/main/kotlin", "build/generated/source/proto/main/kotlin", "build/generated/source/proto/main/grpckt")
         }
