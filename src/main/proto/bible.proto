@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+// Keep this to stay in your existing package
+option java_package = "com.biblecontentmedia.adventist.api.grpc";
+
+option java_multiple_files = false;
+
+package bible;
+
+service BibleService {
+  rpc GetVerse (VerseRequest) returns (VerseResponse);
+}
+
+message VerseRequest {
+  string version = 1;
+  int32 book_number = 2;
+  int32 chapter = 3;
+  int32 verse = 4;
+}
+
+message VerseResponse {
+  string content = 1;
+  string citation = 2;
+}
