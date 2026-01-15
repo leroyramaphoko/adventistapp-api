@@ -17,4 +17,4 @@ RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/*.jar /app/spring-boot-application.jar
 
 # This entrypoint ensures Environment Variables like MY_GRPC_PORT override properties
-ENTRYPOINT ["java", "-jar", "/app/spring-boot-application.jar"]
+ENTRYPOINT ["sh", "-c", "java -jar /app/spring-boot-application.jar --spring.profiles.active=${SPRING_PROFILES_ACTIVE} --grpc.server.port=${MY_GRPC_PORT}"]
