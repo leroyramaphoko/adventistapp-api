@@ -4,7 +4,7 @@ import com.google.protobuf.gradle.*
 plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.spring") version "2.1.0"
-    id("org.springframework.boot") version "4.0.1"
+    id("org.springframework.boot") version "3.4.1" // Changed to 3.4.1 as 4.0.1 is very new/unstable
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.4"
 }
@@ -22,67 +22,45 @@ repositories {
     mavenCentral()
 }
 
-// PINNED VERSIONS
 val protobufVersion = "3.25.5"
-val grpcJavaVersion = "1.63.0"   // Matches the Spring Boot Starter
-val grpcKotlinVersion = "1.5.0" // Latest stable Kotlin compiler/stub
+val grpcJavaVersion = "1.63.0"
+val grpcKotlinVersion = "1.5.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-
-    // gRPC Starter
     implementation("net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE")
-
-    // Unified Protobuf & gRPC Libraries
     implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("io.grpc:grpc-protobuf:$grpcJavaVersion")
     implementation("io.grpc:grpc-stub:$grpcJavaVersion")
     implementation("io.grpc:grpc-netty-shaded:$grpcJavaVersion")
-
-    // Kotlin gRPC Runtime Support
     implementation("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
-
     implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
-
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 }
 
-// FIX: Force library versions but ignore the code-generation plugins
-configurations.all {
-    resolutionStrategy.eachDependency {
-        // Only force version for JAR libraries, not the "protoc-gen" tools
-        if (requested.group == "io.grpc"
-            && !requested.name.startsWith("protoc-gen")
-            && requested.name != "grpc-kotlin-stub") {
-            useVersion(grpcJavaVersion)
-        }
-    }
+// Ensure the JAR has a manifest pointing to your Main class
+springBoot {
+    mainClass.set("com.biblecontentmedia.adventist.api.adventistappapi.AdventistAppApiApplicationKt")
 }
 
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveFileName.set("app.jar")
+}
+
+// protobuf and sourceSet config remains same as your previous version...
 protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:$protobufVersion"
-    }
+    protoc { artifact = "com.google.protobuf:protoc:$protobufVersion" }
     plugins {
-        id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:$grpcJavaVersion"
-        }
-        id("grpckt") {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar"
-        }
+        id("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:$grpcJavaVersion" }
+        id("grpckt") { artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar" }
     }
     generateProtoTasks {
         all().forEach { task ->
-            task.plugins {
-                id("grpc")
-                id("grpckt")
-            }
-            task.builtins {
-                id("kotlin")
-            }
+            task.plugins { id("grpc"); id("grpckt") }
+            task.builtins { id("kotlin") }
         }
     }
 }
@@ -96,11 +74,7 @@ kotlin {
 
 sourceSets {
     main {
-        java {
-            srcDirs("build/generated/source/proto/main/java", "build/generated/source/proto/main/grpc")
-        }
-        kotlin {
-            srcDirs("src/main/kotlin", "build/generated/source/proto/main/kotlin", "build/generated/source/proto/main/grpckt")
-        }
+        java { srcDirs("build/generated/source/proto/main/java", "build/generated/source/proto/main/grpc") }
+        kotlin { srcDirs("src/main/kotlin", "build/generated/source/proto/main/kotlin", "build/generated/source/proto/main/grpckt") }
     }
 }
