@@ -12,12 +12,11 @@ WORKDIR /app
 # Copy only the executable JAR
 COPY --from=build /home/gradle/src/build/libs/*SNAPSHOT.jar /app/app.jar
 
-# Expose all possible ports (Web, Dev gRPC, Prod gRPC)
+# Only expose the base web port.
+# gRPC ports are handled dynamically by Dokploy environment variables.
 EXPOSE 8080
-EXPOSE 9091
-EXPOSE 9092
 
-# Using Shell Form (no brackets) so environment variables expand correctly
+# Using Shell Form so $SPRING_PROFILES_ACTIVE and $MY_GRPC_PORT expand correctly
 ENTRYPOINT echo "Starting App... Profile: $SPRING_PROFILES_ACTIVE, gRPC Port: $MY_GRPC_PORT" && \
            java -jar /app/app.jar \
            --spring.profiles.active=$SPRING_PROFILES_ACTIVE \
