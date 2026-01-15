@@ -10,7 +10,7 @@ class BibleGrpcService : BibleServiceGrpcKt.BibleServiceCoroutineImplBase() {
     override suspend fun getVerse(request: Bible.VerseRequest): Bible.VerseResponse {
         return Bible.VerseResponse.newBuilder()
             .setContent("In the beginning God created the heaven and the earth.")
-            .setCitation("Genesis 1:1 (${request.version}) Leroy Ramaphoko")
+            .setCitation("Genesis 1:1 (${request.version}) Leroy")
             .build()
     }
 }
