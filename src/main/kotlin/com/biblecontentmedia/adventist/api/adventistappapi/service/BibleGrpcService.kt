@@ -1,8 +1,9 @@
 package com.biblecontentmedia.adventist.api.adventistappapi.service
 
 import com.biblecontentmedia.adventist.api.grpc.BibleServiceGrpcKt
-import com.biblecontentmedia.adventist.api.grpc.VerseRequest
-import com.biblecontentmedia.adventist.api.grpc.VerseResponse
+import com.biblecontentmedia.adventist.api.grpc.Bible // The outer class
+import com.biblecontentmedia.adventist.api.grpc.Bible.VerseRequest  // Reference the inner message
+import com.biblecontentmedia.adventist.api.grpc.Bible.VerseResponse
 import net.devh.boot.grpc.server.service.GrpcService
 
 @GrpcService
